@@ -13,25 +13,40 @@ const shapes = {
       <path d="M9 20v-7h6v7" />
     </>
   ),
-  plus: <path d="M12 5v14M5 12h14" />,
-  history: (
-    <>
-      <path d="M3 11a9 9 0 1 1 2.5 7M3 4v7h7" />
-      <path d="M12 7v5l3 2" />
-    </>
-  ),
-  settings: (
-    <>
-      <path d="M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Z" />
-      <circle cx="12" cy="12" r="3" />
-    </>
-  ),
   camera: (
     <>
       <path d="M3 7h4l2-3h6l2 3h4v13H3V7Z" />
       <circle cx="12" cy="13" r="4" />
     </>
   ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="m3 17 5-5 4 4 3-3 6 6" />
+    </>
+  ),
+  swap: <path d="m17 3 4 4-4 4M21 7H8M7 21l-4-4 4-4M3 17h13" />,
+  ruler: (
+    <>
+      <path d="m3 17 14-14 4 4L7 21l-4-4Z" />
+      <path d="m7 13 2 2m1-5 2 2m1-5 2 2" />
+    </>
+  ),
+  tag: (
+    <>
+      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+      <circle cx="7.5" cy="8.5" r="1.2" />
+    </>
+  ),
+  crosshair: (
+    <>
+      <circle cx="12" cy="12" r="6" />
+      <path d="M12 2v6M12 16v6M2 12h6M16 12h6" />
+    </>
+  ),
+  undo: <path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" />,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   wifi: (
     <>
       <path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0M8.5 16a6 6 0 0 1 7 0" />
@@ -72,12 +87,6 @@ const shapes = {
     <>
       <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
       <path d="m8.5 12 2.5 2.5 4.5-5" />
-    </>
-  ),
-  clock: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
     </>
   ),
 } satisfies Record<string, ReactNode>

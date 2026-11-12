@@ -35,11 +35,11 @@ export class ErrorBoundary extends Component<Props, State> {
               title="CargoVision could not display this screen."
               action={<Button onClick={reloadApp}>Reload app</Button>}
             >
-              Reload to try again. If the problem continues, return to the
-              workspace and report what happened.
+              Reload to try again. If the problem continues, go back to the home
+              screen and report what happened.
             </ErrorState>
             <a className={styles.recoveryLink} href="/">
-              Return to workspace
+              Go to home screen
             </a>
           </Card>
         </main>

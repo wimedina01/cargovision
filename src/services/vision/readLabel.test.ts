@@ -6,10 +6,12 @@ import {
   cancelOcr,
   recognizeText,
 } from './ocr'
+import { levelText } from '../image/deskew'
 import { readBarcodes } from './barcodes'
 import { readLabel } from './readLabel'
 import type { ReadProgress } from './readLabel'
 
+vi.mock('../image/deskew', () => ({ levelText: vi.fn() }))
 vi.mock('./barcodes', () => ({ readBarcodes: vi.fn() }))
 vi.mock('./ocr', async (importOriginal) => ({
   ...(await importOriginal<typeof Ocr>()),
@@ -17,14 +19,17 @@ vi.mock('./ocr', async (importOriginal) => ({
   cancelOcr: vi.fn(),
 }))
 
+const levelTextMock = vi.mocked(levelText)
 const readBarcodesMock = vi.mocked(readBarcodes)
 const recognizeTextMock = vi.mocked(recognizeText)
 const photo = new Blob(['photo'])
 
 describe('readLabel', () => {
   beforeEach(() => {
+    levelTextMock.mockReset()
     readBarcodesMock.mockReset()
     recognizeTextMock.mockReset()
+    levelTextMock.mockImplementation((image) => Promise.resolve(image))
     readBarcodesMock.mockResolvedValue([
       { format: 'Code 128', text: '01612345675' },
     ])
@@ -49,6 +54,17 @@ describe('readLabel', () => {
     ])
     expect(reading.barcodeProblem).toBeNull()
     expect(reading.textProblem).toBeNull()
+  })
+
+  it('reads text from the levelled photo and barcodes from the original', async () => {
+    const levelled = new Blob(['levelled'])
+    levelTextMock.mockResolvedValue(levelled)
+
+    await readLabel(photo)
+
+    expect(levelTextMock).toHaveBeenCalledWith(photo)
+    expect(readBarcodesMock).toHaveBeenCalledWith(photo)
+    expect(recognizeTextMock.mock.calls[0]?.[0]).toBe(levelled)
   })
 
   it('reports each stage and the text reading progress', async () => {
@@ -117,6 +133,19 @@ describe('readLabel', () => {
     ).rejects.toBeInstanceOf(OcrCancelledError)
     expect(recognizeTextMock).not.toHaveBeenCalled()
     expect(cancelOcr).toHaveBeenCalled()
+  })
+
+  it('does not start reading text when the signal aborts while levelling', async () => {
+    const controller = new AbortController()
+    levelTextMock.mockImplementation((image) => {
+      controller.abort()
+      return Promise.resolve(image)
+    })
+
+    await expect(
+      readLabel(photo, { signal: controller.signal }),
+    ).rejects.toBeInstanceOf(OcrCancelledError)
+    expect(recognizeTextMock).not.toHaveBeenCalled()
   })
 
   it('refuses to start with a signal that has already aborted', async () => {

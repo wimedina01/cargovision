@@ -14,6 +14,8 @@ describe('pieceFindings', () => {
     ['1 PIECE', '1 piece'],
     ['PIECES\n3', '3 pieces'],
     ['PIECE 2 OF 5', 'Piece 2 of 5'],
+    ['PIECE2OF5', 'Piece 2 of 5'],
+    ['PIECE20F5', 'Piece 2 of 5'],
     ['PC 2/5', 'Piece 2 of 5'],
     ['2 OF 5 PIECES', 'Piece 2 of 5'],
   ])('reads "%s"', (printed, title) => {

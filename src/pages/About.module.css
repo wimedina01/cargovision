@@ -16,11 +16,55 @@
   color: var(--accent);
 }
 
-.settings {
-  margin: 0 0 1.5rem;
+.items,
+.steps {
+  display: grid;
+  gap: 1.1rem;
+  margin: 0;
 }
 
-.settings > div {
+.items {
+  padding: 0;
+  list-style: none;
+}
+
+.steps {
+  padding-left: 1.4rem;
+}
+
+.items li,
+.steps li {
+  font-size: 0.85rem;
+}
+
+.steps li {
+  padding-left: 0.4rem;
+}
+
+.steps li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.items span,
+.steps span {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.lead {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.details {
+  margin: 0;
+}
+
+.details > div {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
@@ -30,41 +74,13 @@
   font-size: 0.85rem;
 }
 
-.settings dt {
+.details dt {
   color: var(--text-muted);
 }
 
-.settings dd {
+.details dd {
   margin: 0;
   font-weight: 600;
-}
-
-.lead {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.steps {
-  display: grid;
-  gap: 1.1rem;
-  padding-left: 1.4rem;
-}
-
-.steps li {
-  padding-left: 0.4rem;
-  font-size: 0.85rem;
-}
-
-.steps li::marker {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.steps span {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--text-muted);
-  font-size: 0.8rem;
 }
 
 .note {

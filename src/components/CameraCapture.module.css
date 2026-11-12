@@ -1,0 +1,32 @@
+.capture {
+  display: grid;
+  gap: 1rem;
+}
+
+.viewfinder {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  overflow: hidden;
+  color: var(--text-on-dark);
+  background: #02070f;
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-lg);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  max-height: 68dvh;
+  object-fit: contain;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.actions > * {
+  flex: 1 1 12rem;
+}

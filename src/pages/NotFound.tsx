@@ -15,10 +15,10 @@ export function NotFound() {
         <EmptyState
           icon="box"
           title="Back to familiar ground"
-          action={<LinkButton to="/">Back to workspace</LinkButton>}
+          action={<LinkButton to="/">Back to home</LinkButton>}
         >
           <p>
-            Return to the workspace to find the screens available in this build.
+            Go back to the home screen to read a label or measure a package.
           </p>
         </EmptyState>
       </Card>

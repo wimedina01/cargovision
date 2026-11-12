@@ -11,11 +11,7 @@ export function AppHeader() {
         Skip to content
       </a>
       <div className={styles.topbar}>
-        <Link
-          className={styles.brand}
-          to="/"
-          aria-label="CargoVision workspace"
-        >
+        <Link className={styles.brand} to="/" aria-label="CargoVision home">
           <span className={styles.brandMark}>
             <Icon name="box" width="29" height="29" />
           </span>
@@ -29,7 +25,7 @@ export function AppHeader() {
         <div className={styles.headerMeta}>
           <span className={styles.localLabel}>
             <Icon name="shield" width="18" height="18" />
-            Local-only foundation
+            Works on this device
           </span>
           <OnlineIndicator />
         </div>
@@ -44,30 +40,37 @@ export function AppHeader() {
             }
           >
             <Icon name="home" width="20" height="20" />
-            Workspace
+            Home
           </NavLink>
           <NavLink
-            to="/history"
+            to="/read"
             className={({ isActive }) =>
               `${styles.navLink} ${isActive ? styles.active : ''}`
             }
           >
-            <Icon name="history" width="20" height="20" />
-            History
+            <Icon name="tag" width="20" height="20" />
+            Read label
           </NavLink>
           <NavLink
-            to="/settings"
+            to="/measure"
             className={({ isActive }) =>
               `${styles.navLink} ${isActive ? styles.active : ''}`
             }
           >
-            <Icon name="settings" width="20" height="20" />
-            Settings
+            <Icon name="ruler" width="20" height="20" />
+            Measure
+          </NavLink>
+          <NavLink
+            to="/about"
+            className={({ isActive }) =>
+              `${styles.navLink} ${isActive ? styles.active : ''}`
+            }
+          >
+            <Icon name="info" width="20" height="20" />
+            About
           </NavLink>
         </nav>
-        <span className={styles.release}>
-          FOUNDATION / v{appConfig.version}
-        </span>
+        <span className={styles.release}>v{appConfig.version}</span>
       </div>
     </header>
   )

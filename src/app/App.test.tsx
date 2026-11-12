@@ -1,14 +1,21 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { appConfig } from '../config/appConfig'
 import { usePwaStatus } from '../hooks/usePwaStatus'
 import { reloadApp } from '../services/app/reloadApp'
+import type * as Ocr from '../services/vision/ocr'
+import { warmUpOcr } from '../services/vision/ocr'
 import App from './App'
 
 vi.mock('../hooks/usePwaStatus', () => ({ usePwaStatus: vi.fn() }))
 vi.mock('../services/app/reloadApp')
+vi.mock('../services/vision/ocr', async (importOriginal) => ({
+  ...(await importOriginal<typeof Ocr>()),
+  warmUpOcr: vi.fn(),
+  cancelOcr: vi.fn(),
+}))
 
 function renderApp(path = '/') {
   return render(
@@ -18,7 +25,12 @@ function renderApp(path = '/') {
   )
 }
 
+function heading(name: string) {
+  return screen.getByRole('heading', { level: 1, name })
+}
+
 beforeEach(() => {
+  vi.mocked(warmUpOcr).mockResolvedValue(undefined)
   vi.mocked(usePwaStatus).mockReturnValue({
     status: 'development',
     error: null,
@@ -28,70 +40,77 @@ beforeEach(() => {
   })
 })
 
-describe('application foundation', () => {
+describe('application shell', () => {
   it.each([
-    ['/', 'A clearer view of your cargo.'],
-    ['/inspection/new', 'New inspection'],
-    ['/history', 'Inspection history'],
-    ['/settings', 'Settings'],
-    ['/diagnostics', 'Diagnostics'],
-    ['/camera-test', 'Camera test'],
+    ['/', 'Check a package'],
+    ['/read', 'Read a label'],
+    ['/measure', 'Measure a package'],
+    ['/about', 'About CargoVision'],
     ['/not-a-cargovision-route', 'Page not found'],
   ])('renders %s with an accessible page heading', (path, title) => {
     renderApp(path)
 
-    const heading = screen.getByRole('heading', { level: 1, name: title })
-    expect(heading).toHaveFocus()
+    expect(heading(title)).toHaveFocus()
     expect(document.title).toBe(`${title} | CargoVision`)
     expect(
       screen.getByRole('navigation', { name: 'Main navigation' }),
     ).toBeVisible()
   })
 
-  it('labels the preview honestly and does not offer an active camera control', async () => {
+  it('moves between the screens from the main navigation', async () => {
     const user = userEvent.setup()
     renderApp()
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
 
-    expect(screen.getByText('Early local proof of concept')).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Camera Test' })).toBeDisabled()
-    expect(screen.getByText('Coming in Milestone 2')).toBeVisible()
-    expect(screen.queryByText('Resume Draft')).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('link', { name: /Start New Inspection/ }))
-    expect(screen.getByText(/No inspection has been created/)).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: /save|capture|confirm/i }),
-    ).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('link', { name: 'Back to workspace' }))
-    expect(
-      screen.getByRole('heading', {
-        level: 1,
-        name: 'A clearer view of your cargo.',
-      }),
-    ).toBeVisible()
+    await user.click(within(nav).getByRole('link', { name: 'Read label' }))
+    expect(heading('Read a label')).toHaveFocus()
+    await user.click(within(nav).getByRole('link', { name: 'Measure' }))
+    expect(heading('Measure a package')).toHaveFocus()
+    await user.click(within(nav).getByRole('link', { name: 'About' }))
+    expect(heading('About CargoVision')).toHaveFocus()
+    await user.click(within(nav).getByRole('link', { name: 'Home' }))
+    expect(heading('Check a package')).toHaveFocus()
   })
 
-  it('recovers from unknown routes through the workspace link', async () => {
+  it('offers the two tasks from the home screen', async () => {
+    const user = userEvent.setup()
+    renderApp()
+    const main = screen.getByRole('main')
+
+    await user.click(within(main).getByRole('link', { name: 'Read a label' }))
+    expect(heading('Read a label')).toBeVisible()
+
+    await user.click(screen.getByRole('link', { name: 'CargoVision home' }))
+    await user.click(within(main).getByRole('link', { name: 'Measure' }))
+    expect(heading('Measure a package')).toBeVisible()
+  })
+
+  it('recovers from unknown routes through the home link', async () => {
     const user = userEvent.setup()
     renderApp('/missing/nested/page')
-    await user.click(screen.getByRole('link', { name: 'Back to workspace' }))
-    expect(
-      screen.getByRole('heading', {
-        level: 1,
-        name: 'A clearer view of your cargo.',
-      }),
-    ).toBeVisible()
+
+    await user.click(screen.getByRole('link', { name: 'Back to home' }))
+
+    expect(heading('Check a package')).toBeVisible()
   })
 
-  it('renders configuration in settings without pretending preferences can be saved', () => {
-    renderApp('/settings')
+  it('lets a photo be chosen where the browser has no camera', () => {
+    renderApp('/read')
+
+    expect(screen.getByText('This browser cannot use the camera')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Choose a photo' })).toBeEnabled()
+  })
+
+  it('describes the app without promising anything it does not do', () => {
+    renderApp('/about')
+
     expect(screen.getByText(appConfig.version, { exact: true })).toBeVisible()
-    expect(screen.getByText(`Inches (${appConfig.defaultUnit})`)).toBeVisible()
-    expect(screen.getByText('Preferences are not editable yet')).toBeVisible()
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /save/i }),
+      screen.getByText('Dangerous goods are not interpreted'),
+    ).toBeVisible()
+    expect(screen.getByText('Measurements are estimates')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: /save|sign in/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -109,7 +128,7 @@ describe('application foundation', () => {
     })
     renderApp()
 
-    expect(screen.getByText('Offline shell ready')).toBeVisible()
+    expect(screen.getByText('Ready to use offline')).toBeVisible()
     expect(applyUpdate).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: 'Review update' }))
     expect(
@@ -136,7 +155,7 @@ describe('application foundation', () => {
     renderApp()
 
     expect(screen.getByRole('alert')).toHaveTextContent('insufficient storage')
-    expect(screen.queryByText('Offline shell ready')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ready to use offline')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Reload to retry' }))
     expect(reloadApp).toHaveBeenCalledOnce()
   })

@@ -51,22 +51,10 @@
   font-size: 0.7rem;
 }
 
-.privacy,
-.footerMeta {
+.privacy {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.footerMeta {
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.footerMeta a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
 }
 
 .errorShell {

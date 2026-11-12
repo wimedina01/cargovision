@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { AppHeader } from '../components/AppHeader'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -68,19 +67,12 @@ function AppShell() {
           <Icon name="shield" width="17" height="17" />
           No account. No cloud connection.
         </span>
-        <div className={styles.footerMeta}>
-          {appConfig.developerMode && (
-            <Link to="/diagnostics">Diagnostics</Link>
-          )}
-          <span>
-            Milestone {appConfig.milestone} / v{appConfig.version}
-          </span>
-        </div>
+        <span>v{appConfig.version}</span>
       </footer>
       <ConfirmDialog
         open={confirmUpdate}
         title="Reload CargoVision?"
-        description="Apply the downloaded app update now. No inspections are stored in this foundation build."
+        description="Apply the downloaded app update now. Any photo you are working with will be discarded."
         confirmLabel="Reload and update"
         onCancel={() => setConfirmUpdate(false)}
         onConfirm={() => {

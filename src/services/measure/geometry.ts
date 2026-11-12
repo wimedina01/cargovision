@@ -119,22 +119,17 @@ export function clientToImagePoint(
   }
 }
 
-/** The index of the point closest to the target, if one is within maxDistance. */
-export function nearestPointIndex(
-  points: readonly Point[],
-  target: Point,
-  maxDistance: number,
-): number | null {
-  let nearest: number | null = null
-  let nearestDistance = maxDistance
-  for (const [index, point] of points.entries()) {
-    const gap = distance(point, target)
-    if (gap <= nearestDistance) {
-      nearest = index
-      nearestDistance = gap
-    }
+/** Moves a point by an offset in image pixels, keeping it inside the photo. */
+export function movePoint(
+  point: Point,
+  dx: number,
+  dy: number,
+  image: Size,
+): Point {
+  return {
+    x: clamp(point.x + dx, 0, image.width),
+    y: clamp(point.y + dy, 0, image.height),
   }
-  return nearest
 }
 
 /** Groups points into consecutive pairs, starting at the given index. Ignores a trailing odd point. */

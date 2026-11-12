@@ -1,204 +1,43 @@
-.intro {
-  position: relative;
-}
-
-.proofBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-bottom: 1.5rem;
-  padding: 0.4rem 0.75rem;
-  color: var(--warning-on-dark);
-  background: var(--warning-dark-surface);
-  border: 1px solid var(--warning);
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.hero {
-  display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  overflow: hidden;
-  padding: 0;
-}
-
-.heroContent {
-  padding: clamp(1.5rem, 3.8vw, 2.75rem);
-}
-
-.sectionLabel {
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08rem;
-}
-
-.heroContent h2 {
-  margin: 1rem 0;
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
-  font-weight: 650;
-  letter-spacing: -0.09rem;
-  line-height: 1.14;
-}
-
-.heroContent > p {
-  max-width: 45ch;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.93rem;
-}
-
-.heroAction {
-  display: grid;
-  justify-items: start;
-  gap: 0.75rem;
-  margin-top: 1.75rem;
-}
-
-.heroAction > span {
-  max-width: 46ch;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-}
-
-.illustration {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-width: 0;
-  padding: 2rem 1rem;
-  background-color: var(--surface-illustration);
-  background-image:
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 32px 32px;
-  border-left: 1px solid var(--border);
-}
-
-.illustrationTag,
-.illustrationCaption {
-  padding: 0.4rem 0.6rem;
-  color: var(--illustration-line);
-  background: var(--surface-illustration);
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-  font-weight: 600;
-  letter-spacing: 0.08rem;
-  text-align: center;
-}
-
-.illustrationCaption {
-  letter-spacing: 0.16rem;
-}
-
-.parcel {
-  width: 100%;
-  max-width: 360px;
-}
-
-.shadow {
-  fill: var(--illustration-line);
-  opacity: 0.08;
-}
-
-.boxTop {
-  fill: var(--illustration-top);
-}
-
-.boxLeft {
-  fill: var(--illustration-left);
-}
-
-.boxRight {
-  fill: var(--illustration-right);
-}
-
-.tape {
-  fill: var(--illustration-tape);
-}
-
-.boxMark,
-.groundLine {
-  fill: none;
-  stroke: var(--illustration-line);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.groundLine {
-  stroke-width: 1.5;
-}
-
 .actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  margin-top: 1rem;
 }
 
 .actionCard {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 1.5rem;
 }
 
 .actionIcon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   color: var(--accent);
   background: var(--info-surface);
   border-radius: var(--radius-sm);
 }
 
-.mutedIcon {
-  color: var(--text-muted);
-  background: var(--surface-muted);
-}
-
 .actionCard h2 {
   margin: 1rem 0 0.6rem;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .actionCard p {
   flex: 1;
   margin: 0 0 1.5rem;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
-.actionCard > a,
-.actionCard > button {
+.actionCard > a {
   width: 100%;
-  font-size: 0.85rem;
 }
 
-.availability {
-  align-self: center;
-  margin-top: 0.6rem;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-}
-
-.details {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: stretch;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.deviceCard,
-.roadmapCard {
-  padding: 1.5rem;
+.device {
+  margin-top: 1rem;
 }
 
 .cardHeading {
@@ -228,6 +67,7 @@
 }
 
 .offlineState > svg {
+  flex-shrink: 0;
   margin-top: 0.15rem;
 }
 
@@ -249,102 +89,11 @@
 .deviceNote {
   margin: 1rem 0 0;
   color: var(--text-muted);
-  font-size: 0.7rem;
-}
-
-.roadmap {
-  display: grid;
-  gap: 1rem;
-  margin: 1.25rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.roadmap li {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.currentStep,
-.stepNumber {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-}
-
-.currentStep {
-  color: var(--success);
-  background: var(--success-surface);
-}
-
-.stepNumber {
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  border: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-}
-
-.roadmap strong {
-  display: block;
-  font-size: 0.8rem;
-}
-
-.roadmap div > span {
-  display: block;
-  margin-top: 0.1rem;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-}
-
-.currentLabel {
-  margin-left: auto;
-  color: var(--success);
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-}
-
-@media (max-width: 960px) {
-  .hero {
-    grid-template-columns: 1.2fr 1fr;
-  }
-
-  .actions {
-    gap: 0.75rem;
-  }
-
-  .actionCard {
-    padding: 1rem;
-  }
-
-  .currentLabel {
-    display: none;
-  }
+  font-size: 0.75rem;
 }
 
 @media (max-width: 760px) {
-  .hero {
+  .actions {
     grid-template-columns: 1fr;
-  }
-
-  .illustration {
-    display: none;
-  }
-
-  .actions,
-  .details {
-    grid-template-columns: 1fr;
-  }
-
-  .actionCard {
-    padding: 1.5rem;
-  }
-
-  .currentLabel {
-    display: inline;
   }
 }

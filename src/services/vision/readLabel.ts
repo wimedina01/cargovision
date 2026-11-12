@@ -1,3 +1,4 @@
+import { levelText } from '../image/deskew'
 import { interpretLabel } from '../labels/interpret'
 import type { Finding, ScannedBarcode } from '../labels/types'
 import { readBarcodes } from './barcodes'
@@ -35,8 +36,10 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
 
 /**
  * Reads the barcodes and printed text in a photo, then explains what they
- * mean. Barcodes go first because they are quick. If the signal aborts, the
- * returned promise rejects and any text reading in progress is stopped.
+ * mean. Barcodes go first because they are quick, and are read from the photo
+ * as taken. The text reader gets a copy turned level, because it misses the
+ * ends of sloping lines. If the signal aborts, the returned promise rejects
+ * and any text reading in progress is stopped.
  */
 export async function readLabel(
   image: Blob,
@@ -65,7 +68,10 @@ export async function readLabel(
     let confidence: number | null = null
     let textProblem: string | null = null
     try {
-      const result = await recognizeText(image, (fraction) => {
+      const level = await levelText(image)
+      // Starting the reader after an abort would bring a stopped worker back.
+      throwIfAborted(signal)
+      const result = await recognizeText(level, (fraction) => {
         onProgress?.({ stage: 'text', fraction })
       })
       text = result.text

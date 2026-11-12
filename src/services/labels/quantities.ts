@@ -17,9 +17,10 @@ const PIECE_WORD = String.raw`(?:PIECES?|PCS?|PKGS?|PACKAGES?)`
 // A number and its word or unit must share a line (a single space between
 // them), while a caption may sit on the line above its value ("PIECES" / "3").
 
-// "PIECE 2 OF 5", "PC 2/5", "PKG NO. 2 OF 5"
+// "PIECE 2 OF 5", "PC 2/5", "PKG NO. 2 OF 5". Text readers often turn the
+// letter O into a zero, so "PIECE 20F5" is read as 2 of 5 too.
 const PIECE_POSITION = new RegExp(
-  String.raw`\b(?:PIECE|PC|PKG|PACKAGE)S?\.?\s*[:=#]?\s*(?:NO\.? ?)?(\d{1,4}) ?(?:OF|/) ?(\d{1,4})\b(?![/.-]\d)`,
+  String.raw`\b(?:PIECE|PC|PKG|PACKAGE)S?\.?\s*[:=#]?\s*(?:NO\.? ?)?(\d{1,4}) ?(?:[O0]F|/) ?(\d{1,4})\b(?![/.-]\d)`,
   'g',
 )
 // "2 OF 5 PIECES"

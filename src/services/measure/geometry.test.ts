@@ -5,7 +5,7 @@ import {
   isReferenceShort,
   lengthInUnit,
   millimetresPerPixel,
-  nearestPointIndex,
+  movePoint,
   pairUp,
   parseLength,
 } from './geometry'
@@ -84,20 +84,19 @@ describe('clientToImagePoint', () => {
   })
 })
 
-describe('nearestPointIndex', () => {
-  const points = [
-    { x: 0, y: 0 },
-    { x: 100, y: 0 },
-    { x: 108, y: 0 },
-  ]
+describe('movePoint', () => {
+  const image = { width: 200, height: 100 }
 
-  it('picks the closest point within reach', () => {
-    expect(nearestPointIndex(points, { x: 106, y: 0 }, 24)).toBe(2)
-    expect(nearestPointIndex(points, { x: 3, y: 4 }, 24)).toBe(0)
+  it('shifts a point by the given offset', () => {
+    expect(movePoint({ x: 50, y: 40 }, 5, -10, image)).toEqual({ x: 55, y: 30 })
   })
 
-  it('gives nothing when every point is out of reach', () => {
-    expect(nearestPointIndex(points, { x: 50, y: 300 }, 24)).toBeNull()
+  it('stops at the edges of the photo', () => {
+    expect(movePoint({ x: 198, y: 2 }, 10, -10, image)).toEqual({
+      x: 200,
+      y: 0,
+    })
+    expect(movePoint({ x: 1, y: 99 }, -10, 10, image)).toEqual({ x: 0, y: 100 })
   })
 })
 
