@@ -1,0 +1,23 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.online {
+  color: var(--success-on-dark);
+  background: var(--success-dark-surface);
+}
+
+.offline {
+  color: var(--warning-on-dark);
+  background: var(--warning-dark-surface);
+}

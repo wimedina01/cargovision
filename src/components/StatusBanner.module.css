@@ -1,0 +1,45 @@
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+
+.banner > svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.content {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.content p {
+  margin: 0;
+}
+
+.info {
+  color: var(--info);
+  background: var(--info-surface);
+}
+
+.success {
+  color: var(--success);
+  background: var(--success-surface);
+}
+
+.warning {
+  color: var(--warning);
+  background: var(--warning-surface);
+}
+
+.error {
+  color: var(--error);
+  background: var(--error-surface);
+}
