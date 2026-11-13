@@ -28,6 +28,11 @@ export interface LabelReading {
 export interface ReadOptions {
   signal?: AbortSignal
   onProgress?: (progress: ReadProgress) => void
+  /**
+   * Turn the photo level before reading its text. On by default. Live reading
+   * leaves it off, because it is the slowest step on the main thread.
+   */
+  level?: boolean
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -43,7 +48,7 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
  */
 export async function readLabel(
   image: Blob,
-  { signal, onProgress }: ReadOptions = {},
+  { signal, onProgress, level = true }: ReadOptions = {},
 ): Promise<LabelReading> {
   throwIfAborted(signal)
 
@@ -68,10 +73,10 @@ export async function readLabel(
     let confidence: number | null = null
     let textProblem: string | null = null
     try {
-      const level = await levelText(image)
+      const toRead = level ? await levelText(image) : image
       // Starting the reader after an abort would bring a stopped worker back.
       throwIfAborted(signal)
-      const result = await recognizeText(level, (fraction) => {
+      const result = await recognizeText(toRead, (fraction) => {
         onProgress?.({ stage: 'text', fraction })
       })
       text = result.text

@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ImageError, fitWithin, imageFromFile, imageFromVideo } from './images'
+import {
+  ImageError,
+  fitWithin,
+  frameFromVideo,
+  imageFromFile,
+  imageFromVideo,
+} from './images'
 
 describe('fitWithin', () => {
   it('keeps an image that already fits', () => {
@@ -41,5 +47,24 @@ describe('imageFromVideo', () => {
     const video = document.createElement('video')
 
     await expect(imageFromVideo(video)).rejects.toThrow('not ready')
+  })
+})
+
+describe('frameFromVideo', () => {
+  it('refuses a preview that has not produced a frame yet', async () => {
+    const video = document.createElement('video')
+
+    await expect(frameFromVideo(video)).rejects.toThrow('not ready')
+  })
+
+  it('refuses a preview that has only loaded its size', async () => {
+    const video = document.createElement('video')
+    Object.defineProperty(video, 'readyState', {
+      value: HTMLMediaElement.HAVE_METADATA,
+    })
+    Object.defineProperty(video, 'videoWidth', { value: 640 })
+    Object.defineProperty(video, 'videoHeight', { value: 480 })
+
+    await expect(frameFromVideo(video)).rejects.toThrow('not ready')
   })
 })

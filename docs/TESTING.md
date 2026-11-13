@@ -16,7 +16,7 @@ npm run build
 
 ## Automated coverage
 
-203 tests in 20 files at the last full run.
+231 tests in 20 files at the last full run.
 
 - **Label interpretation** (`services/labels`): air waybill parsing, check digits,
   and airline prefixes; piece, weight, and dimension formats, including OCR
@@ -26,24 +26,40 @@ npm run build
   pointer-to-photo mapping, and tiny or short references.
 - **Image services** (`services/image`): scaling and orientation; deskew against
   synthetic pages with a known tilt (0, 3, -4, 8, and -12 degrees), a blank page,
-  and every fallback to the original photo.
+  and every fallback to the original photo; refusing a camera preview that has
+  not produced a frame yet (for photos and for live frames).
 - **Reading engines** (`services/vision`), with zxing-wasm and Tesseract mocked:
   reader reuse and retry after a failed load; progress; cancelling a read and
   starting a fresh worker; a browser without WebAssembly SIMD; and `readLabel`
-  itself (barcodes read from the original, OCR on the levelled copy, aborting
-  before OCR starts, and one reader failing while the other still reports).
+  itself (barcodes read from the original, OCR on the levelled copy or, when
+  asked, on the photo as it is, aborting before OCR starts, and one reader
+  failing while the other still reports).
+- **Live reader** (`services/vision/liveReader`), with frame capture and
+  `readLabel` mocked and a fake clock: frames read without levelling; a rest
+  between reads, longer after a slow one; one read at a time; waiting while the
+  page is hidden or the preview is not playing; stopping while resting or
+  mid-read and ignoring a late result; giving up and logging after three
+  failures in a row, whichever kind they are; counting only consecutive
+  failures; carrying on with one reader; and not counting a stopped text reader
+  as a failure.
 - **Camera** (`services/camera`, `useCamera`, `CameraCapture`): blocked,
   missing, busy, stopped, and insecure-context problems; rear-camera preference;
-  switching cameras; turning the camera off when it is not needed; the
+  switching cameras; turning the camera off when it is not needed; handing the
+  preview over to the page and taking it back, including while switching; the
   choose-a-photo alternative; releasing a photo that arrives after leaving.
 - **Pages** (`ReadLabel`, `Measure`): plain-language findings with the matched
   text; progress; doubtful-reading and nothing-recognized warnings; retaking and
-  stale results; reference choice and custom length; undo, clear all, keyboard
-  placement, nudging, dragging, and the measurement limit.
-- **Shell and PWA** (`App`, `ErrorBoundary`, `usePwaStatus`, `OnlineIndicator`,
-  `ConfirmDialog`): routes, focus and titles, unknown-route recovery, About copy
-  that promises nothing the app does not do, offline readiness waiting for
-  precaching, failures with recovery, and confirmed updates.
+  stale results; live reading (the panel waiting for the camera, findings that
+  follow the camera, one reader not working, Pause and Resume without showing an
+  old reading, suggesting a photo after repeated failures, stopping when a photo
+  is taken or the screen is left, and staying paused across a retake);
+  reference choice and custom length; undo, clear all, keyboard placement,
+  nudging, dragging, and the measurement limit.
+- **Shell and PWA** (`App`, `ErrorBoundary`, `usePwaStatus`, `ConfirmDialog`):
+  the two routes with their titles and focus; `/`, `/about`, and unknown paths
+  redirecting to Read label; only the two tasks offered; the quiet offline
+  status; offline readiness waiting for precaching; failures with recovery; and
+  confirmed updates.
 
 Vitest tests run with two workers to keep local resource use bounded. Browser
 APIs are isolated behind hooks/services. Service-worker registration is mocked in
@@ -52,8 +68,8 @@ unit tests; those tests do not prove real offline behavior.
 jsdom does not implement canvas, `createImageBitmap`, `mediaDevices`,
 `URL.createObjectURL`, native modal dialogs, or window scrolling, so tests mock
 or shim them. The real camera, canvas deskew, zxing-wasm, Tesseract, focus
-trapping, installation, and offline navigation are therefore covered only by the
-browser and device checks below.
+trapping, installation, live-reading speed, and offline navigation are therefore
+covered only by the browser and device checks below.
 
 ## Production browser checks
 
@@ -71,25 +87,39 @@ preview server and reload.
    first installation; do not clear unrelated sites' data. Do not clear Cache
    Storage behind a live service worker: the old worker keeps running and the new
    build waits for a reload.
-2. Wait for **Ready to use offline** on the home screen. In DevTools >
+2. Wait for **Ready to use offline** under the app name. In DevTools >
    Application, an activated service worker and a precache of 16 distinct URLs
    must exist: the CSS, four JavaScript chunks, the ZXing `.wasm` and its
    loader, four icons, `index.html`, the manifest, and the three `/ocr/` files.
+   If the status never changes and no worker appears, try a fresh tab or origin
+   before suspecting the build: a registration that never finished was seen twice
+   in one long-lived automation tab (after its site data had been cleared), while
+   fresh tabs installed normally. The cause is unknown.
 3. Read a label: open **Read label**, choose a test label photo, and compare every
    finding with the label (see "Test labels" below).
-4. Stop the preview server (Ctrl+C in its terminal). Reload `/read`, `/measure`,
-   `/about`, and a made-up path such as `/nope`. Each must render, the made-up
-   one as the app's NotFound page. Read the label again: the result must match
-   step 3.
-5. Open **Measure** and check a known object (see "Measurement check").
-6. At landscape 1280 x 800, portrait 800 x 1280, and narrow 360 x 800 CSS-pixel
+4. Stop the preview server (Ctrl+C in its terminal). Reload `/read` and
+   `/measure`, and open a made-up path such as `/nope`. The first two must
+   render, and the made-up one must redirect to `/read`. Read the label again:
+   the result must match step 3.
+5. Live reading: point the camera at a test label. The **Live reading** panel
+   must fill with findings within a few seconds and follow the camera as the
+   view changes. **Pause** must stop it without leaving old findings, **Resume**
+   must restart it, **Take photo** must switch to the photo read, and **Retake
+   photo** must bring live reading back. Repeat with the server stopped. The
+   checks recorded so far used a simulated camera (a canvas stream drawing the
+   generated label), not a real one.
+6. Open **Measure** and check a known object (see "Measurement check").
+7. At landscape 1280 x 800, portrait 800 x 1280, and narrow 360 x 800 CSS-pixel
    viewports, inspect for clipping/overlap and horizontal page overflow. Check
-   every visible link/button target is at least 44 x 44 CSS pixels.
-7. Use Tab/Shift+Tab and the skip link. Verify focus visibility, sensible ordering,
+   every visible link/button target is at least 44 x 44 CSS pixels. On Read
+   label with the camera on, above 850 px the camera stays in view while the live
+   findings scroll; at 850 px and narrower the findings sit below a preview that
+   is no taller than about half the screen.
+8. Use Tab/Shift+Tab and the skip link. Verify focus visibility, sensible ordering,
    current navigation indication, and keyboard access to the measurement points.
-8. Check the Network panel: assets originate only from this app; no external
-   API, telemetry, font, model, or image request is made, and no request
-   carries photo, text, or barcode data.
+9. Check the Network panel, including while live reading runs: assets originate
+   only from this app; no external API, telemetry, font, model, or image request
+   is made, and no request carries photo, text, or barcode data.
 
 ### Test labels
 
@@ -113,8 +143,10 @@ findings, and normally the "hard to read" warning); and a page with the word
 FLAMMABLE, which must produce only the neutral "Dangerous goods wording found"
 notice. Generated labels read well; real labels with glare, curvature, blur, or
 small print will miss details. Each finding shows the label text it came from,
-and the full text that was read is listed under the findings, so a person can
-always compare.
+and for a photo read the full text that was read is listed under the findings, so
+a person can always compare. A live read of the same label can differ in details
+(one live read matched `PIECE 20F 5` and still explained it as Piece 2 of 5), so
+compare it with the photo read.
 
 ### Measurement check
 
@@ -124,13 +156,29 @@ flat image of a 6 x 4 in box beside a Letter sheet measured 6.0 in and 4.0 in.
 With a real camera, tilt the camera or raise the box and record how far the
 estimate drifts; the app does not correct for either.
 
+### Live reading check
+
+Recorded so far, in desktop Chromium with a simulated camera drawing the
+generated test label (no real label, no tablet): live findings appeared within a
+few seconds in both the development and production builds and refreshed about
+once a second; they cleared when the view changed and returned when it changed
+back; Pause, Resume, Take photo, and Retake photo behaved as described in the
+[architecture notes](./ARCHITECTURE.md#live-reading); no frames were read while
+Measure was open; and the layout was measured at 800 x 1000 and 360 x 780 with
+no horizontal overflow or clipped control (at 320 x 640 it also fit, but the
+panel starts near the bottom edge). With the production build and the server
+stopped, live findings still appeared: six findings about 2 seconds after a
+reload. Speed with a real PC webcam was about one read per second (barcodes 100
+to 145 ms, text 0.5 to 1.2 s). A tablet is expected to be 2 to 4 times slower,
+which is an estimate until the ChromeOS live-reading step below is run.
+
 ### Update behavior
 
-For a manual update test, open a production build, make a visible version/source
-change locally, rebuild, and check for a worker update in DevTools. The page must
+For a manual update test, open a production build, make a visible source change
+locally, rebuild, and check for a worker update in DevTools. The page must
 not reload automatically. **Review update** opens a dialog; Cancel/Escape leaves
 the page intact; **Reload and update** applies the waiting worker. Restore any
-test-only version/source changes afterwards.
+test-only source changes afterwards.
 
 ## Exact ChromeOS tablet acceptance steps
 
@@ -152,8 +200,8 @@ test-only version/source changes afterwards.
 ### Install and exercise
 
 5. While connected, open the approved HTTPS address in Chrome.
-6. On Home, wait for **Ready to use offline**. The first load downloads about
-   8 MB. A green Online connection indicator alone is not enough.
+6. Wait for **Ready to use offline** under the app name. The first load
+   downloads about 8 MB.
 7. Select Chrome's address-bar install icon, or its install-app menu, and install
    **CargoVision**. If policy blocks installation, record the block; do not weaken
    device security settings.
@@ -163,27 +211,38 @@ test-only version/source changes afterwards.
    uses the rear camera (or switch to it), then photograph a label. Compare every
    finding with the label, and check that anything misread is visible in the text
    shown. Repeat with a tilted, a dim, and a glared label and note what is missed
-   or wrong. Record how long a read takes on this tablet.
-10. Block the camera for the site (Chrome site settings) and confirm the
-    explanation appears and **Choose a photo** still works.
-11. Open **Measure**. Photograph a box beside the sheet or card, mark the
+   or wrong. Record how long a photo read takes on this tablet.
+10. Choose **Retake photo** and hold the camera on a label while watching the
+    **Live reading** panel. Record how long the first findings take to appear,
+    roughly how often they refresh (a desktop PC managed about one read per
+    second; this tablet is expected to be slower but has not been measured),
+    whether the screen stays responsive, and whether the findings match the
+    photo read. Try **Pause** and **Resume**. After a few minutes of live
+    reading, note whether the tablet is warm and how much battery it used.
+11. Block the camera for the site (Chrome site settings) and confirm the
+    explanation appears, the Live reading panel says it starts when the camera
+    is on, and **Choose a photo** still works.
+12. Open **Measure**. Photograph a box beside the sheet or card, mark the
     reference and then the edges, and compare with the tape measure. Record the
     error for a flat, straight-down photo and for an angled one. Confirm points
     can be dragged accurately with a finger.
-12. Rotate into landscape, then portrait. Read the screens at normal working
-    distance. No control should overlap, clip, or require precision tapping.
-13. Turn off Wi-Fi and any other network connection. Confirm **Offline** is
-    visible. Close and reopen the installed app, then read a label and take a
-    measurement offline. Open a made-up route and verify recovery through the
-    home link.
-14. Reconnect and confirm **Online** returns. Confirm no sign-in or
-    external-service error appeared, and that the browser's site storage holds
-    only the app's offline cache and no photos.
+13. Rotate into landscape, then portrait. Read the screens at normal working
+    distance, including Read label with the camera on: the preview and the Live
+    reading panel must both be usable. No control should overlap, clip, or
+    require precision tapping.
+14. Turn off Wi-Fi and any other network connection. Close and reopen the
+    installed app: it should still say **Ready to use offline**. Read a label
+    (live and from a photo) and take a measurement offline. In a Chrome tab
+    (an installed window has no address bar), open a made-up route and confirm
+    it lands on Read label.
+15. Reconnect. Confirm no sign-in or external-service error appeared, and that
+    the browser's site storage holds only the app's offline cache and no photos.
 
 Record pass/fail for each step and attach screenshots for failures. ChromeOS
-installation, launcher behavior, enterprise policy, the live camera, reading
-speed and accuracy on real labels, physical touch usability, and rotation remain
-unverified until these steps are run on the actual tablet.
+installation, launcher behavior, enterprise policy, the live camera, live-reading
+speed and battery use, reading accuracy on real labels, physical touch
+usability, and rotation remain unverified until these steps are run on the
+actual tablet.
 
 ## After validation
 

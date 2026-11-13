@@ -43,8 +43,11 @@ function showCamera(overrides: Partial<UseCamera> = {}) {
   const hook = camera(overrides)
   vi.mocked(useCamera).mockReturnValue(hook)
   const onCapture = vi.fn()
-  const view = render(<CameraCapture onCapture={onCapture} />)
-  return { hook, onCapture, ...view }
+  const onVideoChange = vi.fn()
+  const view = render(
+    <CameraCapture onCapture={onCapture} onVideoChange={onVideoChange} />,
+  )
+  return { hook, onCapture, onVideoChange, ...view }
 }
 
 function startPreview() {
@@ -52,6 +55,43 @@ function startPreview() {
 }
 
 describe('CameraCapture', () => {
+  it('hands over the preview once it is playing and takes it back when it goes away', () => {
+    const { onVideoChange, unmount } = showCamera()
+    expect(onVideoChange).not.toHaveBeenCalled()
+
+    startPreview()
+    expect(onVideoChange).toHaveBeenCalledExactlyOnceWith(
+      screen.getByLabelText('Live camera preview'),
+    )
+
+    unmount()
+    expect(onVideoChange).toHaveBeenLastCalledWith(null)
+  })
+
+  it('lets go of the preview while the camera is switching', () => {
+    const { onCapture, onVideoChange, rerender } = showCamera()
+    startPreview()
+    onVideoChange.mockClear()
+
+    vi.mocked(useCamera).mockReturnValue(
+      camera({
+        state: {
+          status: 'live',
+          stream: { id: 'stream-2' } as unknown as MediaStream,
+        },
+      }),
+    )
+    rerender(
+      <CameraCapture onCapture={onCapture} onVideoChange={onVideoChange} />,
+    )
+    expect(onVideoChange).toHaveBeenCalledExactlyOnceWith(null)
+
+    startPreview()
+    expect(onVideoChange).toHaveBeenLastCalledWith(
+      screen.getByLabelText('Live camera preview'),
+    )
+  })
+
   it('waits for the preview before a photo can be taken', async () => {
     vi.mocked(imageFromVideo).mockResolvedValue(photo)
     const { onCapture } = showCamera()

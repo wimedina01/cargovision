@@ -3,9 +3,7 @@ import { AppHeader } from '../components/AppHeader'
 import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorState } from '../components/ErrorState'
-import { Icon } from '../components/Icon'
 import { StatusBanner } from '../components/StatusBanner'
-import { appConfig } from '../config/appConfig'
 import { usePwaStatus } from '../hooks/usePwaStatus'
 import { useRouteAccessibility } from '../hooks/useRouteAccessibility'
 import { reloadApp } from '../services/app/reloadApp'
@@ -20,7 +18,7 @@ function AppShell() {
 
   return (
     <div className={styles.app}>
-      <AppHeader />
+      <AppHeader pwaStatus={pwa.status} />
       <main className={styles.main} id="main-content" tabIndex={-1}>
         <div className={styles.notices}>
           {pwa.error && (
@@ -60,15 +58,8 @@ function AppShell() {
             </StatusBanner>
           )}
         </div>
-        <AppRoutes pwaStatus={pwa.status} />
+        <AppRoutes />
       </main>
-      <footer className={styles.footer}>
-        <span className={styles.privacy}>
-          <Icon name="shield" width="17" height="17" />
-          No account. No cloud connection.
-        </span>
-        <span>v{appConfig.version}</span>
-      </footer>
       <ConfirmDialog
         open={confirmUpdate}
         title="Reload CargoVision?"

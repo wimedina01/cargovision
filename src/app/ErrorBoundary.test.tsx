@@ -33,7 +33,8 @@ it('logs a rendering failure and provides a visible recovery action', async () =
   )
   await user.click(screen.getByRole('button', { name: 'Reload app' }))
   expect(reloadApp).toHaveBeenCalledOnce()
-  expect(
-    screen.getByRole('link', { name: 'Go to home screen' }),
-  ).toHaveAttribute('href', '/')
+  expect(screen.getByRole('link', { name: 'Start over' })).toHaveAttribute(
+    'href',
+    '/',
+  )
 })

@@ -1,7 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
-import packageJson from './package.json' with { type: 'json' }
 import { ocrAssets } from './vite-plugins/ocrAssets.ts'
 
 export default defineConfig({
@@ -48,9 +47,6 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
-  define: {
-    __APP_VERSION__: JSON.stringify(packageJson.version),
-  },
   build: { target: 'chrome120' },
   test: {
     environment: 'jsdom',

@@ -1,77 +1,46 @@
-import { Link, NavLink } from 'react-router-dom'
-import { appConfig } from '../config/appConfig'
+import { NavLink } from 'react-router-dom'
+import type { PwaStatus } from '../hooks/usePwaStatus'
 import { Icon } from './Icon'
-import { OnlineIndicator } from './OnlineIndicator'
+import type { IconName } from './Icon'
+import { OfflineStatus } from './OfflineStatus'
 import styles from './AppHeader.module.css'
 
-export function AppHeader() {
+const tasks: { to: string; label: string; icon: IconName }[] = [
+  { to: '/read', label: 'Read label', icon: 'tag' },
+  { to: '/measure', label: 'Measure', icon: 'ruler' },
+]
+
+export function AppHeader({ pwaStatus }: { pwaStatus: PwaStatus }) {
   return (
     <header className={styles.header}>
       <a className={styles.skipLink} href="#main-content">
         Skip to content
       </a>
       <div className={styles.topbar}>
-        <Link className={styles.brand} to="/" aria-label="CargoVision home">
+        <p className={styles.brand}>
           <span className={styles.brandMark}>
-            <Icon name="box" width="29" height="29" />
+            <Icon name="box" width="26" height="26" />
           </span>
-          <span>
-            <span className={styles.brandName}>
-              Cargo<span>Vision</span>
-            </span>
-            <span className={styles.brandCaption}>CARGO ACCEPTANCE</span>
+          <span className={styles.brandName}>
+            Cargo<span>Vision</span>
           </span>
-        </Link>
-        <div className={styles.headerMeta}>
-          <span className={styles.localLabel}>
-            <Icon name="shield" width="18" height="18" />
-            Works on this device
-          </span>
-          <OnlineIndicator />
-        </div>
+        </p>
+        <OfflineStatus status={pwaStatus} />
       </div>
-      <div className={styles.navbar}>
-        <nav aria-label="Main navigation" className={styles.nav}>
+      <nav aria-label="Choose a task" className={styles.tasks}>
+        {tasks.map(({ to, label, icon }) => (
           <NavLink
-            to="/"
-            end
+            key={to}
+            to={to}
             className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.active : ''}`
+              `${styles.task} ${isActive ? styles.active : ''}`
             }
           >
-            <Icon name="home" width="20" height="20" />
-            Home
+            <Icon name={icon} width="28" height="28" />
+            {label}
           </NavLink>
-          <NavLink
-            to="/read"
-            className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.active : ''}`
-            }
-          >
-            <Icon name="tag" width="20" height="20" />
-            Read label
-          </NavLink>
-          <NavLink
-            to="/measure"
-            className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.active : ''}`
-            }
-          >
-            <Icon name="ruler" width="20" height="20" />
-            Measure
-          </NavLink>
-          <NavLink
-            to="/about"
-            className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.active : ''}`
-            }
-          >
-            <Icon name="info" width="20" height="20" />
-            About
-          </NavLink>
-        </nav>
-        <span className={styles.release}>v{appConfig.version}</span>
-      </div>
+        ))}
+      </nav>
     </header>
   )
 }

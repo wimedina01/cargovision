@@ -1,14 +1,6 @@
-.heading {
+.hint {
   margin: 0 0 1rem;
-}
-
-.tips {
-  display: grid;
-  gap: 0.35rem;
-  margin: 1.25rem 0 0;
-  padding-left: 1.3rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  color: var(--muted-on-dark);
 }
 
 .layout {
@@ -18,12 +10,10 @@
   gap: 1rem;
 }
 
-.side {
-  display: grid;
-  gap: 1rem;
-}
-
 .instruction {
+  display: flex;
+  align-items: center;
+  min-height: 4.4rem;
   margin: 0 0 0.9rem;
   padding: 0.6rem 0.9rem;
   color: var(--info);
@@ -132,15 +122,22 @@
   --handle-color: #3ddc97;
 }
 
-.hint,
+.dragHint {
+  margin: 0.75rem 0 0;
+  color: var(--muted-on-dark);
+  font-size: 0.8rem;
+}
+
 .help,
 .caveat {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
 
-.hint {
-  margin: 0.75rem 0 0;
+.heading {
+  margin: 1.25rem 0 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
 }
 
 .help {

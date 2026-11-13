@@ -5,10 +5,11 @@ Read `docs/ARCHITECTURE.md` and this file before changing the app.
 the approved scope. Inspect current dependencies and explain the smallest
 complete implementation and any new packages before coding.
 
-- Approved scope: a basic camera app that reads labels (barcodes, OCR, and
-  plain-language interpretation) and measures packages against a reference
-  object. Nothing is stored. Inspections, history, storage, export, camera
-  piece counting, and cloud features from the plan need explicit approval first.
+- Approved scope: a basic camera app that reads labels, live or from a photo
+  (barcodes, OCR, and plain-language interpretation), and measures packages
+  against a reference object. Nothing is stored. Inspections, history, storage,
+  export, video recording, camera piece counting, and cloud features from the
+  plan need explicit approval first.
 - Never fabricate camera results, OCR, barcodes, measurements, counts, or confidence.
   Every finding restates text that was on the label and shows it. Flag
   inconsistent values for a person to check; never silently correct them.
@@ -22,8 +23,11 @@ complete implementation and any new packages before coding.
 - Strict TypeScript; no `any` or unsafe casts to bypass type errors.
 - Keep browser APIs in hooks/services. Keep label interpretation and measurement
   geometry pure and out of React components.
-- OCR runs on a still photo only, once per read, on the deskewed copy; barcodes
-  are read from the original photo. Do not merge multiple OCR passes.
+- A photo read runs OCR once, on the deskewed copy; barcodes are read from the
+  original photo. Live reading (`liveReader`) reads one camera frame at a time,
+  without deskew, and shows only the newest reading. Do not merge multiple OCR
+  passes or keep earlier live readings. Live frames are never displayed or
+  kept, and stopping live reading must not cancel the shared OCR worker.
 - OCR, WebAssembly, and language files are served from `/ocr/` by
   `vite-plugins/ocrAssets.ts` and precached. Never load engine files from a CDN,
   and check the precache size when adding assets.

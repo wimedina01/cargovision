@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '../components/Button'
 import { CameraCapture } from '../components/CameraCapture'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
 import { LoadingState } from '../components/LoadingState'
-import { PageHeader } from '../components/PageHeader'
+import { PageTitle } from '../components/PageTitle'
 import { StatusBanner } from '../components/StatusBanner'
 import { useCapturedImage } from '../hooks/useCapturedImage'
+import { useLiveReading } from '../hooks/useLiveReading'
 import type { CapturedImage } from '../services/image/images'
 import { categoryLabels } from '../services/labels/types'
 import type { Finding, FindingTone } from '../services/labels/types'
@@ -49,6 +51,16 @@ function FindingItem({ finding }: { finding: Finding }) {
         <code>{finding.raw}</code>
       </p>
     </li>
+  )
+}
+
+function FindingList({ findings }: { findings: Finding[] }) {
+  return (
+    <ul className={styles.findings}>
+      {findings.map((finding) => (
+        <FindingItem key={finding.id} finding={finding} />
+      ))}
+    </ul>
   )
 }
 
@@ -112,11 +124,7 @@ function Results({ reading }: { reading: LabelReading }) {
           What the label says
         </h2>
         {reading.findings.length > 0 ? (
-          <ul className={styles.findings}>
-            {reading.findings.map((finding) => (
-              <FindingItem key={finding.id} finding={finding} />
-            ))}
-          </ul>
+          <FindingList findings={reading.findings} />
         ) : (
           <p className={styles.nothing}>
             No air waybill number, quantity or handling term was recognized. Try
@@ -160,9 +168,96 @@ function ReadingProgress({ progress }: { progress: ReadProgress }) {
   )
 }
 
+function LiveFindings({ reading }: { reading: LabelReading }) {
+  return (
+    <>
+      {reading.textProblem !== null && (
+        <p className={styles.liveNote}>
+          Text reading is not working, so only barcodes are shown.
+        </p>
+      )}
+      {reading.barcodeProblem !== null && (
+        <p className={styles.liveNote}>
+          Barcode reading is not working, so only text is shown.
+        </p>
+      )}
+      {reading.findings.length > 0 ? (
+        <FindingList findings={reading.findings} />
+      ) : (
+        <p className={styles.nothing}>
+          Nothing recognized yet. Fill the frame with the label, keep it flat
+          and hold steady.
+        </p>
+      )}
+      <p className={styles.liveNote}>
+        A quick look that can be wrong. Take a photo for the most accurate
+        reading, and check every detail against the label.
+      </p>
+    </>
+  )
+}
+
+interface LivePanelProps {
+  /** The camera preview, or null while there is none. */
+  video: HTMLVideoElement | null
+  paused: boolean
+  onPausedChange: (paused: boolean) => void
+}
+
+/** What the camera sees right now, kept beside it so the preview stays put. */
+function LivePanel({ video, paused, onPausedChange }: LivePanelProps) {
+  const { reading, unavailable } = useLiveReading(video, paused)
+
+  let body: ReactNode
+  if (!video) {
+    body = (
+      <p className={styles.liveNote}>
+        Live reading starts when the camera is on.
+      </p>
+    )
+  } else if (unavailable) {
+    body = (
+      <p className={styles.liveNote}>
+        Live reading is not working on this device. Take a photo instead.
+      </p>
+    )
+  } else if (paused) {
+    body = (
+      <p className={styles.liveNote}>
+        Paused. Choose Resume to read what the camera sees.
+      </p>
+    )
+  } else if (!reading) {
+    body = <LoadingState label="Looking for a label..." />
+  } else {
+    body = <LiveFindings reading={reading} />
+  }
+
+  return (
+    <Card className={styles.livePanel} aria-labelledby="live-heading">
+      <div className={styles.liveHeader}>
+        <h2 id="live-heading">Live reading</h2>
+        {video && !unavailable && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              onPausedChange(!paused)
+            }}
+          >
+            {paused ? 'Resume' : 'Pause'}
+          </Button>
+        )}
+      </div>
+      {body}
+    </Card>
+  )
+}
+
 export function ReadLabel() {
   const [image, setImage] = useCapturedImage()
   const [reading, setReading] = useState<Reading>({ status: 'idle' })
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null)
+  const [livePaused, setLivePaused] = useState(false)
   const run = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -211,36 +306,34 @@ export function ReadLabel() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="READ A LABEL"
-        title="Read a label"
-        description="Photograph a shipping label. CargoVision reads its barcodes and text on this device and explains what they mean."
-      />
+      <PageTitle>Read a label</PageTitle>
 
       {!image ? (
-        <Card aria-labelledby="capture-heading">
-          <h2 className={styles.heading} id="capture-heading">
-            Photograph the label
-          </h2>
-          <CameraCapture onCapture={(captured) => void start(captured)} />
-          <ul className={styles.tips}>
-            <li>Fill the frame with the label and keep it flat.</li>
-            <li>Use even light and avoid glare on glossy labels.</li>
-            <li>Hold still while the photo is taken.</li>
-          </ul>
-        </Card>
+        <div className={styles.liveLayout}>
+          <div className={styles.camera}>
+            <p className={styles.hint}>
+              Fill the frame with the label. Keep it flat and out of glare.
+            </p>
+            <CameraCapture
+              onCapture={(captured) => void start(captured)}
+              onVideoChange={setVideo}
+            />
+          </div>
+          <LivePanel
+            video={video}
+            paused={livePaused}
+            onPausedChange={setLivePaused}
+          />
+        </div>
       ) : (
         <div className={styles.layout}>
-          <Card className={styles.photo} aria-labelledby="photo-heading">
-            <h2 className={styles.heading} id="photo-heading">
-              Your photo
-            </h2>
+          <div className={styles.photo}>
             <img src={image.url} alt="The photographed label" />
             <Button variant="secondary" onClick={retake}>
               <Icon name="camera" width="20" height="20" />
               Retake photo
             </Button>
-          </Card>
+          </div>
           <div>
             {reading.status === 'reading' && (
               <ReadingProgress progress={reading.progress} />

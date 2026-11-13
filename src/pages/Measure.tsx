@@ -4,7 +4,7 @@ import { Button } from '../components/Button'
 import { CameraCapture } from '../components/CameraCapture'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
-import { PageHeader } from '../components/PageHeader'
+import { PageTitle } from '../components/PageTitle'
 import { StatusBanner } from '../components/StatusBanner'
 import { useCapturedImage } from '../hooks/useCapturedImage'
 import {
@@ -167,38 +167,24 @@ export function Measure() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="MEASURE"
-        title="Measure a package"
-        description="Photograph a package next to an object of known size, such as a sheet of paper. Mark both and CargoVision estimates the package's length."
-      />
+      <PageTitle>Measure a package</PageTitle>
 
       {!image ? (
-        <Card aria-labelledby="capture-heading">
-          <h2 className={styles.heading} id="capture-heading">
-            Photograph the package
-          </h2>
+        <>
+          <p className={styles.hint}>
+            Lay a sheet of paper or a bank card flat beside the edge you want to
+            measure. Hold the camera straight above, with both in view.
+          </p>
           <CameraCapture
             onCapture={(captured) => {
               setImage(captured)
               setPoints([])
             }}
           />
-          <ol className={styles.tips}>
-            <li>
-              Lay a sheet of paper or a bank card flat, right beside the edge
-              you want to measure.
-            </li>
-            <li>Hold the camera straight above, not at an angle.</li>
-            <li>Keep both in view, as large in the photo as you can.</li>
-          </ol>
-        </Card>
+        </>
       ) : (
         <div className={styles.layout}>
-          <Card aria-labelledby="photo-heading">
-            <h2 className={styles.heading} id="photo-heading">
-              Mark the reference, then the package
-            </h2>
+          <div>
             <p className={styles.instruction} role="status">
               {instructionFor(points.length)}
             </p>
@@ -288,7 +274,7 @@ export function Measure() {
                 />
               ))}
             </div>
-            <p className={styles.hint} id="handle-hint">
+            <p className={styles.dragHint} id="handle-hint">
               Drag a point to adjust it. With a keyboard, focus a point and use
               the arrow keys, or hold Shift for larger steps.
             </p>
@@ -328,112 +314,98 @@ export function Measure() {
                 Retake photo
               </Button>
             </div>
-          </Card>
-
-          <div className={styles.side}>
-            <Card aria-labelledby="reference-heading">
-              <h2 className={styles.heading} id="reference-heading">
-                Reference object
-              </h2>
-              <p className={styles.help}>
-                Choose what you laid beside the package, and which of its sides
-                you marked.
-              </p>
-              <label className={styles.field}>
-                <span>Known length</span>
-                <select
-                  value={presetId}
-                  onChange={(event) => {
-                    setPresetId(event.target.value)
-                  }}
-                >
-                  {REFERENCE_PRESETS.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
-                  ))}
-                  <option value={CUSTOM}>Something else</option>
-                </select>
-              </label>
-              {presetId === CUSTOM && (
-                <div className={styles.custom}>
-                  <label className={styles.field}>
-                    <span>Length</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      value={customLength}
-                      aria-invalid={customInvalid}
-                      aria-describedby={
-                        customInvalid ? 'custom-length-error' : undefined
-                      }
-                      onChange={(event) => {
-                        setCustomLength(event.target.value)
-                      }}
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    <span>Unit</span>
-                    <select
-                      value={customUnit}
-                      onChange={(event) => {
-                        setCustomUnit(event.target.value as LengthUnit)
-                      }}
-                    >
-                      <option value="in">inches</option>
-                      <option value="cm">centimeters</option>
-                      <option value="mm">millimeters</option>
-                    </select>
-                  </label>
-                  {customInvalid && (
-                    <p className={styles.error} id="custom-length-error">
-                      Enter a number greater than 0.
-                    </p>
-                  )}
-                </div>
-              )}
-            </Card>
-
-            <Card aria-labelledby="sizes-heading">
-              <h2 className={styles.heading} id="sizes-heading">
-                Estimated sizes
-              </h2>
-              {scaleProblem && (
-                <StatusBanner tone="warning" title="Check the reference">
-                  {scaleProblem}
-                </StatusBanner>
-              )}
-              {mmPerPixel !== null && measurements.length > 0 ? (
-                <ol className={styles.sizes}>
-                  {measurements.map((segment, index) => (
-                    <li key={index}>
-                      <span>Measurement {index + 1}</span>
-                      <strong>
-                        {formatLength(lengthInUnit(segment, mmPerPixel, 'in'))}{' '}
-                        in
-                      </strong>
-                      <span>
-                        {formatLength(lengthInUnit(segment, mmPerPixel, 'cm'))}{' '}
-                        cm
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className={styles.help}>
-                  Sizes appear here once the reference is marked and you have
-                  marked both ends of something to measure.
-                </p>
-              )}
-              <p className={styles.caveat}>
-                These are estimates. They are most accurate when the reference
-                lies in the same flat surface as the edge you measure and the
-                camera looks straight down at it. Use a tape measure for any
-                official dimensions.
-              </p>
-            </Card>
           </div>
+
+          <Card>
+            <label className={styles.field}>
+              <span>Reference object</span>
+              <select
+                value={presetId}
+                onChange={(event) => {
+                  setPresetId(event.target.value)
+                }}
+              >
+                {REFERENCE_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </option>
+                ))}
+                <option value={CUSTOM}>Something else</option>
+              </select>
+            </label>
+            {presetId === CUSTOM && (
+              <div className={styles.custom}>
+                <label className={styles.field}>
+                  <span>Length</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={customLength}
+                    aria-invalid={customInvalid}
+                    aria-describedby={
+                      customInvalid ? 'custom-length-error' : undefined
+                    }
+                    onChange={(event) => {
+                      setCustomLength(event.target.value)
+                    }}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Unit</span>
+                  <select
+                    value={customUnit}
+                    onChange={(event) => {
+                      setCustomUnit(event.target.value as LengthUnit)
+                    }}
+                  >
+                    <option value="in">inches</option>
+                    <option value="cm">centimeters</option>
+                    <option value="mm">millimeters</option>
+                  </select>
+                </label>
+                {customInvalid && (
+                  <p className={styles.error} id="custom-length-error">
+                    Enter a number greater than 0.
+                  </p>
+                )}
+              </div>
+            )}
+            <h2 className={styles.heading} id="sizes-heading">
+              Estimated sizes
+            </h2>
+            {scaleProblem && (
+              <StatusBanner tone="warning" title="Check the reference">
+                {scaleProblem}
+              </StatusBanner>
+            )}
+            {mmPerPixel !== null && measurements.length > 0 ? (
+              <ol className={styles.sizes}>
+                {measurements.map((segment, index) => (
+                  <li key={index}>
+                    <span>Measurement {index + 1}</span>
+                    <strong>
+                      {formatLength(lengthInUnit(segment, mmPerPixel, 'in'))} in
+                    </strong>
+                    <span>
+                      {formatLength(lengthInUnit(segment, mmPerPixel, 'cm'))} cm
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className={styles.help}>
+                Sizes appear here once the reference is marked and you have
+                marked both ends of something to measure.
+              </p>
+            )}
+            <p className={styles.caveat}>
+              These are estimates. They are most accurate when the reference
+              lies in the same flat surface as the edge you measure and the
+              camera looks straight down at it. Use a tape measure for any
+              official dimensions.
+            </p>
+          </Card>
         </div>
       )}
     </>

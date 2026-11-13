@@ -67,6 +67,15 @@ describe('readLabel', () => {
     expect(recognizeTextMock.mock.calls[0]?.[0]).toBe(levelled)
   })
 
+  it('reads text from the photo as it is when asked not to level it', async () => {
+    levelTextMock.mockResolvedValue(new Blob(['levelled']))
+
+    await readLabel(photo, { level: false })
+
+    expect(levelTextMock).not.toHaveBeenCalled()
+    expect(recognizeTextMock.mock.calls[0]?.[0]).toBe(photo)
+  })
+
   it('reports each stage and the text reading progress', async () => {
     recognizeTextMock.mockImplementation((_image, onProgress) => {
       onProgress?.(0.5)

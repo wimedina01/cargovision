@@ -2,7 +2,6 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { appConfig } from '../config/appConfig'
 import { usePwaStatus } from '../hooks/usePwaStatus'
 import { reloadApp } from '../services/app/reloadApp'
 import type * as Ocr from '../services/vision/ocr'
@@ -17,7 +16,7 @@ vi.mock('../services/vision/ocr', async (importOriginal) => ({
   cancelOcr: vi.fn(),
 }))
 
-function renderApp(path = '/') {
+function renderApp(path = '/read') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
@@ -29,69 +28,61 @@ function heading(name: string) {
   return screen.getByRole('heading', { level: 1, name })
 }
 
-beforeEach(() => {
-  vi.mocked(warmUpOcr).mockResolvedValue(undefined)
-  vi.mocked(usePwaStatus).mockReturnValue({
-    status: 'development',
+function mockPwa(overrides: Partial<ReturnType<typeof usePwaStatus>> = {}) {
+  const pwa = {
+    status: 'development' as const,
     error: null,
     updateAvailable: false,
     updating: false,
     applyUpdate: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  })
+    ...overrides,
+  }
+  vi.mocked(usePwaStatus).mockReturnValue(pwa)
+  return pwa
+}
+
+beforeEach(() => {
+  vi.mocked(warmUpOcr).mockResolvedValue(undefined)
+  mockPwa()
 })
 
 describe('application shell', () => {
   it.each([
-    ['/', 'Check a package'],
     ['/read', 'Read a label'],
     ['/measure', 'Measure a package'],
-    ['/about', 'About CargoVision'],
-    ['/not-a-cargovision-route', 'Page not found'],
   ])('renders %s with an accessible page heading', (path, title) => {
     renderApp(path)
 
     expect(heading(title)).toHaveFocus()
     expect(document.title).toBe(`${title} | CargoVision`)
-    expect(
-      screen.getByRole('navigation', { name: 'Main navigation' }),
-    ).toBeVisible()
   })
 
-  it('moves between the screens from the main navigation', async () => {
+  it.each(['/', '/about', '/not-a-cargovision-route'])(
+    'opens the label reader instead of %s',
+    (path) => {
+      renderApp(path)
+
+      expect(heading('Read a label')).toHaveFocus()
+    },
+  )
+
+  it('offers only the two tasks and switches between them', async () => {
     const user = userEvent.setup()
     renderApp()
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    const tasks = screen.getByRole('navigation', { name: 'Choose a task' })
+    const read = within(tasks).getByRole('link', { name: 'Read label' })
+    const measure = within(tasks).getByRole('link', { name: 'Measure' })
 
-    await user.click(within(nav).getByRole('link', { name: 'Read label' }))
-    expect(heading('Read a label')).toHaveFocus()
-    await user.click(within(nav).getByRole('link', { name: 'Measure' }))
+    expect(within(tasks).getAllByRole('link')).toHaveLength(2)
+    expect(read).toHaveAttribute('aria-current', 'page')
+
+    await user.click(measure)
     expect(heading('Measure a package')).toHaveFocus()
-    await user.click(within(nav).getByRole('link', { name: 'About' }))
-    expect(heading('About CargoVision')).toHaveFocus()
-    await user.click(within(nav).getByRole('link', { name: 'Home' }))
-    expect(heading('Check a package')).toHaveFocus()
-  })
+    expect(measure).toHaveAttribute('aria-current', 'page')
+    expect(read).not.toHaveAttribute('aria-current')
 
-  it('offers the two tasks from the home screen', async () => {
-    const user = userEvent.setup()
-    renderApp()
-    const main = screen.getByRole('main')
-
-    await user.click(within(main).getByRole('link', { name: 'Read a label' }))
-    expect(heading('Read a label')).toBeVisible()
-
-    await user.click(screen.getByRole('link', { name: 'CargoVision home' }))
-    await user.click(within(main).getByRole('link', { name: 'Measure' }))
-    expect(heading('Measure a package')).toBeVisible()
-  })
-
-  it('recovers from unknown routes through the home link', async () => {
-    const user = userEvent.setup()
-    renderApp('/missing/nested/page')
-
-    await user.click(screen.getByRole('link', { name: 'Back to home' }))
-
-    expect(heading('Check a package')).toBeVisible()
+    await user.click(read)
+    expect(heading('Read a label')).toHaveFocus()
   })
 
   it('lets a photo be chosen where the browser has no camera', () => {
@@ -101,31 +92,31 @@ describe('application shell', () => {
     expect(screen.getByRole('button', { name: 'Choose a photo' })).toBeEnabled()
   })
 
-  it('describes the app without promising anything it does not do', () => {
-    renderApp('/about')
+  it.each([
+    ['ready', 'Ready to use offline'],
+    ['preparing', 'Preparing offline use...'],
+  ] as const)('says so when offline use is %s', (status, message) => {
+    mockPwa({ status })
+    renderApp()
 
-    expect(screen.getByText(appConfig.version, { exact: true })).toBeVisible()
-    expect(
-      screen.getByText('Dangerous goods are not interpreted'),
-    ).toBeVisible()
-    expect(screen.getByText('Measurements are estimates')).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: /save|sign in/i }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByText(message)).toBeVisible()
   })
+
+  it.each(['development', 'unsupported'] as const)(
+    'does not claim offline readiness while the app is %s',
+    (status) => {
+      mockPwa({ status })
+      renderApp()
+
+      expect(
+        screen.queryByText(/ready to use offline|preparing offline/i),
+      ).not.toBeInTheDocument()
+    },
+  )
 
   it('requires confirmation before applying an available offline update', async () => {
     const user = userEvent.setup()
-    const applyUpdate = vi
-      .fn<() => Promise<void>>()
-      .mockResolvedValue(undefined)
-    vi.mocked(usePwaStatus).mockReturnValue({
-      status: 'ready',
-      error: null,
-      updateAvailable: true,
-      updating: false,
-      applyUpdate,
-    })
+    const { applyUpdate } = mockPwa({ status: 'ready', updateAvailable: true })
     renderApp()
 
     expect(screen.getByText('Ready to use offline')).toBeVisible()
@@ -145,12 +136,9 @@ describe('application shell', () => {
 
   it('shows offline failures with a recovery action, not a ready indicator', async () => {
     const user = userEvent.setup()
-    vi.mocked(usePwaStatus).mockReturnValue({
+    mockPwa({
       status: 'error',
       error: 'Offline setup failed: insufficient storage.',
-      updateAvailable: false,
-      updating: false,
-      applyUpdate: vi.fn<() => Promise<void>>(),
     })
     renderApp()
 

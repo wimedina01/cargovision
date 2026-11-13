@@ -6,20 +6,22 @@ of concept, not an operational acceptance or inspection tool.
 
 ## What it does
 
-- **Read a label.** Take or choose a photo of a label. CargoVision reads its
-  barcodes ([zxing-wasm](https://github.com/Sec-ant/zxing-wasm)) and printed
-  text ([Tesseract.js](https://github.com/naptha/tesseract.js)), then explains
-  what it recognizes in plain language: air waybill numbers (with the check
-  digit and airline), piece counts, weights, dimensions, and handling terms such
-  as _Fragile_ or _Keep upright_. The text behind every finding is shown so a
-  person can compare it with the label.
+- **Read a label.** Point the camera at a label and CargoVision reads it live,
+  or take or choose a photo for a sharper read. It reads barcodes
+  ([zxing-wasm](https://github.com/Sec-ant/zxing-wasm)) and printed text
+  ([Tesseract.js](https://github.com/naptha/tesseract.js)), then explains what
+  it recognizes in plain language: air waybill numbers (with the check digit
+  and airline), piece counts, weights, dimensions, and handling terms such as
+  _Fragile_ or _Keep upright_. The text behind every finding is shown so a
+  person can compare it with the label. Live results appear beside the camera on
+  a wide screen and below it on a narrow one, and **Pause** stops live reading.
 - **Measure a package.** Photograph a package next to an object of known size,
   such as a sheet of paper or a bank card. Mark that reference, then mark the
   edge to measure. The length is scaled from the reference; without one there
   is no measurement.
 - **Stays on the device.** After the first visit the app and its reading tools
-  are cached for offline use. Photos are read in memory, never saved or
-  uploaded. There is no account, history, or cloud service.
+  are cached for offline use. Photos and live camera frames are read in memory,
+  never saved or uploaded. There is no account, history, or cloud service.
 
 ## Run locally
 
@@ -46,8 +48,8 @@ npm run build
 npm run preview -- --host 127.0.0.1 --port 4173 --strictPort
 ```
 
-Open `http://127.0.0.1:4173`, wait for **Ready to use offline** on the home
-screen, and then test offline reloads. The first visit must reach the app host
+Open `http://127.0.0.1:4173`, wait for **Ready to use offline** under the app
+name, and then test offline reloads. The first visit must reach the app host
 and downloads about 8 MB of reading tools (the OCR engine and its English
 language data). The preview server is for local verification, not production
 hosting.
@@ -58,6 +60,12 @@ hosting.
   (such as `0` and `O`), can miss the ends of lines, and struggles with glare,
   blur, perspective, and text rotated more than about 15 degrees. Every finding
   must be checked against the label.
+- Live reading is a quick look, not a careful one. It reads one frame at a time,
+  about once a second on a desktop PC, so what is shown lags the camera by about
+  one read. Expect it to be slower on a tablet (not yet measured). It does not
+  level tilted text, so it can miss or misread more than a photo does; **Take
+  photo** gives the sharper read. It also uses more battery, so use **Pause**
+  when it is not needed.
 - Measurements are estimates. They need a flat reference lying in the same
   plane as the edge being measured, and a camera held straight above it. Use a
   tape measure for official dimensions.
@@ -71,19 +79,21 @@ hosting.
 ## Deliberately not built
 
 Inspection records, history, storage of any kind, accounts, cloud services,
-synchronization, live video analysis, piece counting by camera, and a dangerous
+synchronization, video recording, piece counting by camera, and a dangerous
 goods glossary. The rest of the [reference plan](./docs/CARGOVISION_PLAN.md)
-describes a much larger product; only the camera, label reading, and measuring
-described above are approved and built.
+describes a much larger product; only the camera, label reading (live or from a
+photo), and measuring described above are approved and built.
 
 ## Validation status
 
 Automated checks pass (typecheck, lint, format, unit and component tests, build,
 and the production dependency audit). The production build was exercised in a
-desktop Chromium browser with generated test labels chosen through the file
-picker, including a reload and a full label read while the server was stopped.
-It has **not** been tested on a ChromeOS tablet, with a live camera, or on real
-cargo labels. See [the test plan](./docs/TESTING.md).
+desktop Chromium browser with a generated test label: a reload, a photo read, and
+live reading all worked while the server was stopped. Live reading ran against a
+simulated camera, and its speed was measured with a PC webcam (about one read per
+second). It has **not** been tested on a ChromeOS tablet or on real cargo labels,
+and live reading has not been timed on a tablet. See
+[the test plan](./docs/TESTING.md).
 
 ## Documentation
 

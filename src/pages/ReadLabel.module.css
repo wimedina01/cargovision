@@ -1,12 +1,6 @@
-.heading {
+.hint {
   margin: 0 0 1rem;
-}
-
-.tips {
-  margin: 1.25rem 0 0;
-  padding-left: 1.2rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  color: var(--muted-on-dark);
 }
 
 .layout {
@@ -14,6 +8,42 @@
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   align-items: start;
   gap: 1rem;
+}
+
+.liveLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+/* The camera stays in view while a long live reading is scrolled. */
+.camera {
+  position: sticky;
+  top: 1rem;
+}
+
+.livePanel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.liveHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.liveHeader h2 {
+  margin: 0;
+}
+
+.liveNote {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .photo {
@@ -184,7 +214,14 @@
 }
 
 @media (max-width: 850px) {
-  .layout {
+  .layout,
+  .liveLayout {
     grid-template-columns: 1fr;
+  }
+
+  /* One column: a shorter preview leaves room for the live reading below it. */
+  .camera {
+    position: static;
+    --video-max-height: max(220px, 52dvh);
   }
 }

@@ -92,9 +92,8 @@ Keep development servers on loopback unless explicitly testing another device.
 
 ## Configuration
 
-`src/config/appConfig.ts` exposes only the app name and the build-injected
-package version. There are no feature flags, environment variables, or stored
-settings.
+`src/config/appConfig.ts` exposes only the app name. There are no feature flags,
+environment variables, or stored settings.
 
 ## Assets
 

@@ -14,7 +14,7 @@
   width: 100%;
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: 2.5rem var(--page-padding) 2rem;
+  padding: 1.25rem var(--page-padding) 1.5rem;
 }
 
 .main:focus {
@@ -29,32 +29,11 @@
 .notices {
   display: grid;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .notices:empty {
   display: none;
-}
-
-.footer {
-  --focus-ring: var(--focus-on-dark);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.5rem;
-  width: 100%;
-  max-width: var(--content-width);
-  margin: 0 auto;
-  padding: 1rem var(--page-padding) 1.5rem;
-  color: var(--muted-on-dark);
-  font-size: 0.7rem;
-}
-
-.privacy {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .errorShell {
@@ -69,10 +48,4 @@
   min-height: 48px;
   margin-top: 1rem;
   color: var(--accent);
-}
-
-@media (max-width: 700px) {
-  .main {
-    padding-top: 1.75rem;
-  }
 }

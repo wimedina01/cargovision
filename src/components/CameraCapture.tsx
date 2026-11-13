@@ -17,13 +17,18 @@ import styles from './CameraCapture.module.css'
 interface CameraCaptureProps {
   /** Receives the photo. The receiver owns it and must release it when finished. */
   onCapture: (image: CapturedImage) => void
+  /** Receives the preview once it is playing, and null when it stops or goes away. */
+  onVideoChange?: (video: HTMLVideoElement | null) => void
 }
 
 /**
  * A live camera preview with a button to take a photo, plus a way to choose
  * an existing photo when the camera is unavailable or not wanted.
  */
-export function CameraCapture({ onCapture }: CameraCaptureProps) {
+export function CameraCapture({
+  onCapture,
+  onVideoChange,
+}: CameraCaptureProps) {
   const { state, canSwitch, retry, switchCamera } = useCamera()
   const [busy, setBusy] = useState(false)
   const [photoProblem, setPhotoProblem] = useState<string | null>(null)
@@ -51,6 +56,14 @@ export function CameraCapture({ onCapture }: CameraCaptureProps) {
       video.srcObject = null
     }
   }, [stream])
+
+  useEffect(() => {
+    if (!ready || !onVideoChange) return undefined
+    onVideoChange(videoRef.current)
+    return () => {
+      onVideoChange(null)
+    }
+  }, [ready, onVideoChange])
 
   async function prepare(make: () => Promise<CapturedImage>) {
     setBusy(true)

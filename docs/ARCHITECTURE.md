@@ -15,10 +15,10 @@ main.tsx
     App
       ErrorBoundary
         AppShell
-          AppHeader + OnlineIndicator
+          AppHeader (name, OfflineStatus, Read label / Measure buttons)
           offline/update notifications
-          AppRoutes -> Home | ReadLabel | Measure | About | NotFound
-          footer + controlled ConfirmDialog (app updates)
+          AppRoutes -> ReadLabel | Measure (any other path -> /read)
+          controlled ConfirmDialog (app updates)
 ```
 
 React Router uses browser-history URLs. Pages are eagerly imported so the app is
@@ -26,23 +26,23 @@ one precached unit. The two reading engines are loaded on demand, and both are
 in the precache: zxing-wasm when the first barcode is read, and the Tesseract.js
 worker when the Read label page opens (`warmUpOcr`) or the first text is read.
 
-| Location                    | Responsibility                                                            |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `src/app/`                  | Shell, routes, application error boundary                                 |
-| `src/pages/`                | Home, Read label, Measure, About, 404                                     |
-| `src/components/`           | Reusable, accessible presentation components, including `CameraCapture`   |
-| `src/config/`               | App name and build-injected version                                       |
-| `src/hooks/`                | Camera stream, captured-photo lifetime, connection events, PWA lifecycle  |
-| `src/services/camera/`      | Turns camera failures into plain-language problems                        |
-| `src/services/image/`       | Photo decoding, rotation, scaling and capture; deskew                     |
-| `src/services/vision/`      | Barcode reading, OCR, and the `readLabel` pipeline                        |
-| `src/services/labels/`      | Pure label interpretation: AWB, airlines, quantities, handling, DG notice |
-| `src/services/measure/`     | Pure measurement geometry and reference presets                           |
-| `src/services/units.ts`     | Length and weight conversions                                             |
-| `src/services/app/`         | Browser reload recovery                                                   |
-| `src/styles/`               | One global token file and minimal global styles                           |
-| `vite-plugins/ocrAssets.ts` | Serves (dev) and emits (build) the OCR engine files under `/ocr/`         |
-| `public/icons/`             | Local SVG and installable raster/maskable icons                           |
+| Location                    | Responsibility                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `src/app/`                  | Shell, routes, application error boundary                                          |
+| `src/pages/`                | Read label and Measure                                                             |
+| `src/components/`           | Reusable, accessible presentation components, including `CameraCapture`            |
+| `src/config/`               | App name                                                                           |
+| `src/hooks/`                | Camera stream, captured photo, live reading, PWA lifecycle, route titles and focus |
+| `src/services/camera/`      | Turns camera failures into plain-language problems                                 |
+| `src/services/image/`       | Photo decoding, rotation, scaling; photo and video-frame capture; deskew           |
+| `src/services/vision/`      | Barcode reading, OCR, the `readLabel` pipeline, and the live reader                |
+| `src/services/labels/`      | Pure label interpretation: AWB, airlines, quantities, handling, DG notice          |
+| `src/services/measure/`     | Pure measurement geometry and reference presets                                    |
+| `src/services/units.ts`     | Length and weight conversions                                                      |
+| `src/services/app/`         | Browser reload recovery                                                            |
+| `src/styles/`               | One global token file and minimal global styles                                    |
+| `vite-plugins/ocrAssets.ts` | Serves (dev) and emits (build) the OCR engine files under `/ocr/`                  |
+| `public/icons/`             | Local SVG and installable raster/maskable icons                                    |
 
 CSS Modules own component styles. Semantic CSS tokens define the navy, blue,
 light-card, and status palette. System font fallbacks avoid font downloads.
@@ -51,11 +51,17 @@ React/CSS Modules stack.
 
 ## Routes
 
-- `/`: the two actions, and live offline readiness.
-- `/read`: take or choose a photo, read it, and see the findings.
+The app is one screen with two big buttons in its header, so there is no home
+page.
+
+- `/read`: see live findings beside the camera, or take or choose a photo and
+  read it.
 - `/measure`: take or choose a photo, mark a reference, then mark lengths.
-- `/about`: how it works, limits, ChromeOS install steps, and app details.
-- Any other path: recoverable NotFound page.
+- Any other path, including `/`, redirects to `/read`.
+
+The header also carries a quiet status line ("Preparing offline use..." and then
+"Ready to use offline"). Offline-support problems and updates appear as banners
+above the page.
 
 ## Reading a label
 
@@ -63,7 +69,8 @@ React/CSS Modules stack.
 photo comes from the camera (`imageFromVideo`, which freezes the current frame)
 or from the device (`imageFromFile`). Either way it is rotated upright from its
 camera orientation, scaled so its longer side is at most 2560 px, and held in
-memory as a JPEG.
+memory as a JPEG. Live reading (below) calls the same function on frames taken
+from the camera preview.
 
 1. **Barcodes** are read from the photo as taken, using zxing-wasm (up to ten
    symbols). Their text is returned exactly as printed. The library downloads its
@@ -75,7 +82,8 @@ memory as a JPEG.
    are scored by how sharply the ink collapses into rows (0.5 degree steps, then
    refined to 0.1). The photo is rotated only when the tilt is at least 0.5
    degrees and the score beats the unrotated one by at least 5%; otherwise the
-   original is used. Any failure falls back to the original photo.
+   original is used. Any failure falls back to the original photo. Live frames
+   skip this step (`level: false`).
 3. **Text** is read once, on the levelled copy, with Tesseract.js (English,
    automatic page segmentation, LSTM engine). Merging several passes was tried
    and rejected: the merged texts can contradict each other, and it doubles the
@@ -89,6 +97,58 @@ If one reader fails, the other's results are still shown with a notice. Retaking
 the photo or leaving the page aborts the read and terminates the OCR worker,
 because a Tesseract job cannot be cancelled; the next read starts a fresh one.
 A mean text confidence below 60% shows a "hard to read" warning.
+
+### Live reading
+
+While the camera is on, the Read label page also reads what the preview shows,
+without a button press. `startLiveReader` (`src/services/vision/liveReader.ts`,
+used through the `useLiveReading` hook) runs one sequential loop: take the
+current frame (`frameFromVideo`), read it with `readLabel(frame, { level: false })`,
+publish the reading, rest, and repeat.
+
+- **One read at a time, newest frame only.** The next frame is taken only after
+  the previous read finishes, so nothing queues up. Each reading replaces the
+  last: findings are never cached or merged across frames. The panel therefore
+  lags the camera by about one read, and a label that leaves the view clears
+  away in about a second.
+- **No levelling.** Deskew is the heaviest step on the main thread, so live
+  frames are read as they are. A live read can differ from a photo read of the
+  same label (for example `PIECE 20F 5`, still read as "Piece 2 of 5"), which is
+  why every finding shows the text it matched.
+- **What it shows.** The findings, the text each one matched, notes when one
+  reader is not working, and a reminder that a live read can be wrong. The full
+  text, its confidence, and the "hard to read" warning belong to a photo read.
+- **Frames** are 1280 px JPEGs (quality 0.85) encoded in memory. They are never
+  displayed, saved, or turned into object URLs.
+- **Pacing.** After each read the loop rests for 300 ms, or for a quarter of the
+  time the read took if that is longer, so a tablet is not kept working flat
+  out. While the page is hidden or the preview is not playing it checks again
+  every 500 ms instead of reading.
+- **Giving up.** Three failed reads in a row (a frame could not be taken,
+  reading threw, or neither reader worked) stop the loop, log the error, and
+  replace the panel's content with "Live reading is not working on this device.
+  Take a photo instead." A success resets the count, and one reader failing
+  while the other works is a reading with a note, not a failure.
+- **Pause and Resume** stop and restart the loop, and the choice survives Retake
+  photo. Pausing exists because continuous reading uses more battery.
+- **Photo handover.** Take photo removes the live panel, which stops the loop,
+  and starts the photo read; Retake photo brings live reading back. Live and
+  photo reads share one OCR worker. Stopping the live loop never cancels the
+  worker, because a Tesseract job cannot be cancelled: cancelling terminates the
+  worker, and the next read must load a new one. Retaking during a photo read
+  and leaving the page do cancel it. A photo taken while a live read is in
+  progress waits for that read to finish, and its progress bar can briefly show
+  the live read's progress.
+- **Layout.** Above 850 px the camera is on the left and stays in place while
+  the findings scroll. At 850 px and narrower there is one column, a static
+  camera whose preview is at most about half the screen height, and the panel
+  below it. The live findings are not announced to screen readers as they
+  change, because they update about once a second.
+
+Measured on a desktop PC with a webcam: barcodes took about 100 to 145 ms and
+text about 0.5 to 1.2 s per frame, so roughly one reading per second. A ChromeOS
+tablet is expected to be 2 to 4 times slower. That is an estimate; it has not
+been measured.
 
 ### What the interpreter recognizes
 
@@ -109,12 +169,12 @@ unrecognized prefix never makes a number wrong.
 
 ### Known reading limits
 
-Text recognition runs on a still photo only. Remaining weaknesses, found by
-testing generated labels in a desktop browser:
+Remaining weaknesses, found by testing generated labels in a desktop browser:
 
 - Lines that slope are the main failure. Deskew fixed most of it on generated
   labels tilted 2 to 4 degrees, but the last characters of a line can still be
-  lost, for example "WT 24.5" without its unit.
+  lost, for example "WT 24.5" without its unit. Live reads are not levelled, so
+  tilt hurts them more.
 - Similar characters are confused (`0` and `O`, `5` and `S`). A misread piece
   position such as "20F5" is handled; many others are not.
 - Perspective, glare, blur, and rotation beyond 15 degrees are not corrected.
@@ -141,8 +201,10 @@ centimetres.
 ## Privacy and data handling
 
 Photos live in memory and as object URLs only. They are released when the photo
-is retaken, replaced, or the page is left. Nothing is written to IndexedDB, local
-storage, or the cache, and no request carries photo, text, or barcode data.
+is retaken, replaced, or the page is left. Live reading keeps nothing: each
+camera frame is encoded in memory, read, and dropped, and is never displayed.
+Nothing is written to IndexedDB, local storage, or the cache, and no request
+carries photo, text, or barcode data.
 
 ## Offline lifecycle
 
@@ -156,10 +218,16 @@ for the 3.9 MB OCR core and the 3 MB language data. Its navigation fallback is
 - Service workers are disabled in `npm run dev`.
 - First installation needs access to the app's own host over HTTPS or loopback HTTP.
 - No third-party runtime API, analytics, font, CDN, auth, or model request exists.
-- Online/offline text reflects `navigator.onLine`, not a server availability probe.
+- The app does not show whether it is online. The quiet line under its name
+  reads "Preparing offline use..." and then "Ready to use offline" (it is empty
+  in development).
 - "Ready to use offline" requires a successful precache notification or an
-  already-active service worker. A network signal alone never implies readiness.
-- Installation/registration and update errors are logged and shown with recovery.
+  already-active service worker.
+- A registration the browser refuses, and a failure to apply an update, are
+  logged and shown with a reload action. A worker that registers but then fails
+  to install (for example because a precache download fails) is not detected:
+  the line keeps saying "Preparing offline use..." and reloading retries the
+  installation.
 - Updates wait for a user-confirmed reload. `skipWaiting` is not automatic.
 - Clearing site data or browser storage eviction can remove cached assets.
 
@@ -189,9 +257,13 @@ request. `vite preview` sends the `.gz` file with `Content-Encoding: gzip`, and
 Tesseract detects gzip by its magic bytes, so a host may serve it either way.
 
 Verified in a desktop Chromium browser: after installing the production build on
-a fresh origin, with the server stopped, `/read`, `/measure`, `/about`, and an
-unknown path all reloaded, and a label photo was read with all six expected
-findings.
+a fresh origin, the worker was active and in control within about 2 seconds.
+With the server stopped, `/read` reloaded, `/measure` opened, an unknown path
+redirected to `/read`, a label photo was read with all six expected findings, and
+live reading of a simulated camera showing the same generated label produced the
+same six findings within a few seconds. On two occasions a registration never
+finished in an automation tab that had been open for a long time, after its site
+data was cleared. Fresh tabs installed normally, and the cause is not known.
 
 ## Accessibility and error handling
 
@@ -203,7 +275,7 @@ titles. Reduced-motion preferences are respected.
 Confirmation uses a native modal dialog with an accessible name and description,
 a safe Cancel default, and Escape cancellation. The caller controls its open
 state. Rendering failures are caught by the top-level error boundary, logged, and
-shown with reload and home-screen recovery actions. Camera failures (permission
+shown with a reload button and a start-over link. Camera failures (permission
 denied, no camera, camera in use, insecure context) are turned into plain
 language with a way forward, and choosing a photo from the device always works
 as an alternative to the live camera.
@@ -219,6 +291,9 @@ as an alternative to the live camera.
   only a neutral notice is shown. Adding a glossary needs a reviewed source.
 - **Barcodes are shown as scanned.** Only a complete, correctly checksummed
   air waybill barcode is interpreted; everything else stays a raw barcode.
+- **Live reading is a quick look; a photo is the careful read.** Live frames are
+  read one at a time, newest only, and without levelling so the tablet stays
+  responsive. A photo still gets the full, levelled read.
 - **Nothing is invented.** Findings only restate text that was on the label, and
   inconsistent values (a piece 20 of 5, a bad check digit) are flagged for a
   person to compare rather than silently corrected.

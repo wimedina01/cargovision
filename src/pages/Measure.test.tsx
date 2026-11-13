@@ -76,8 +76,9 @@ describe('Measure', () => {
     render(<Measure />)
 
     expect(
-      screen.getByRole('heading', { name: 'Photograph the package' }),
+      screen.getByText(/Lay a sheet of paper or a bank card/),
     ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Capture' })).toBeVisible()
     expect(screen.queryByText('Estimated sizes')).not.toBeInTheDocument()
   })
 
@@ -134,7 +135,7 @@ describe('Measure', () => {
     tap(stage, 250, 100)
 
     await userEvent.selectOptions(
-      screen.getByLabelText('Known length'),
+      screen.getByLabelText('Reference object'),
       'Something else',
     )
     expect(
@@ -157,7 +158,7 @@ describe('Measure', () => {
     await openPhoto()
 
     await userEvent.selectOptions(
-      screen.getByLabelText('Known length'),
+      screen.getByLabelText('Reference object'),
       'Something else',
     )
     await userEvent.type(screen.getByLabelText('Length'), 'abc')
@@ -243,7 +244,7 @@ describe('Measure', () => {
 
     expect(releaseImage).toHaveBeenCalledWith(photo)
     expect(
-      screen.getByRole('heading', { name: 'Photograph the package' }),
+      screen.getByText(/Lay a sheet of paper or a bank card/),
     ).toBeVisible()
 
     await userEvent.click(screen.getByRole('button', { name: 'Capture' }))
